@@ -6,11 +6,12 @@
 #endif
 
 #include <bcl.h>
-#include "m2.h"
-#include "m2Platform.h"
 
+void qrcode_project(char *project_name);
+void get_qr_data();
+void bc_change_qr_value(uint64_t *id, const char *topic, void *value, void *param);
+void bc_get_system_info(uint64_t *id, const char *topic, void *value, void *param);
+void bc_get_network_info(uint64_t *id, const char *topic, void *value, void *param);
 
-void lcdBufferString(char *str, int x, int y);
-void lcdBufferNumber(int number, int x, int y);
 
 #endif // _APPLICATION_H
