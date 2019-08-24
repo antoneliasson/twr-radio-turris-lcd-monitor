@@ -15,7 +15,7 @@ bc_gfx_t *gfx;
 bc_button_t button_left;
 bc_button_t button_right;
 
-int numberOfPages = 3;
+int numberOfPages = 4;
 
 // QR code variables
 char qr_code[150];
@@ -250,7 +250,10 @@ void lcd_event_handler(bc_module_lcd_event_t event, void *event_param)
             bc_radio_pub_bool("get/network/info", true);
             break;
         
-        default:
+        case 4:
+            bc_radio_pub_bool("reboot/-/device", true);
+            break;
+        default: 
             bc_radio_pub_bool("get/qr/info", true);
             break;
         }
@@ -322,6 +325,13 @@ void lcd_page_wifi_data()
 
 }
 
+void lcd_reboot_page()
+{
+    bc_gfx_clear(gfx);
+    bc_gfx_printf(gfx, 15, 30, true, "Reboot?");
+
+}
+
 void application_init(void)
 {
 
@@ -334,6 +344,7 @@ void application_init(void)
     gfx = bc_module_lcd_get_gfx();
     bc_module_lcd_set_event_handler(lcd_event_handler, NULL);
     bc_gfx_set_font(gfx, &bc_font_ubuntu_13);
+    bc_module_lcd_set_button_hold_time(300);
 
     
     // initialize TMP112 sensor
@@ -361,8 +372,8 @@ void application_init(void)
     bc_module_battery_set_event_handler(battery_event_handler, NULL);
     bc_module_battery_set_update_interval(BATTERY_UPDATE_INTERVAL);
 
-    bc_radio_init(BC_RADIO_MODE_NODE_LISTENING);
-    //bc_radio_set_rx_timeout_for_sleeping_node(250);
+    bc_radio_init(BC_RADIO_MODE_NODE_SLEEPING);
+    bc_radio_set_rx_timeout_for_sleeping_node(500);
     bc_radio_set_subs((bc_radio_sub_t *) subs, sizeof(subs)/sizeof(bc_radio_sub_t));
 
     bc_radio_pairing_request("turris-lcd-monitor", VERSION);
@@ -380,6 +391,8 @@ void application_task(void)
     }
     else
     {
+        bc_gfx_set_font(gfx, &bc_font_ubuntu_13);
+
         if(display_page_index == 0)
         {
             lcd_page_system();
@@ -395,6 +408,11 @@ void application_task(void)
         else if(display_page_index == 3)
         {
             lcd_page_wifi_data();
+        }
+        else if(display_page_index == 4)
+        {
+            bc_gfx_set_font(gfx, &bc_font_ubuntu_24);
+            lcd_reboot_page();
         }
 
         bc_gfx_update(gfx);
