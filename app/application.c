@@ -373,10 +373,10 @@ void application_init(void)
     bc_module_battery_set_update_interval(BATTERY_UPDATE_INTERVAL);
 
     bc_radio_init(BC_RADIO_MODE_NODE_SLEEPING);
-    bc_radio_set_rx_timeout_for_sleeping_node(500);
+    bc_radio_set_rx_timeout_for_sleeping_node(800);
     bc_radio_set_subs((bc_radio_sub_t *) subs, sizeof(subs)/sizeof(bc_radio_sub_t));
 
-    bc_radio_pairing_request("turris-lcd-monitor", VERSION);
+    bc_radio_pairing_request("turris-mon", VERSION);
 
     bc_log_debug("jedu");
 
