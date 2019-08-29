@@ -1,4 +1,8 @@
 article: https://www.hackster.io/jakub-smejkal/turris-lcd-monitor-with-bigclown-1feff8
+video: https://www.youtube.com/watch?v=5fihG2xp4y8
+images:
+  - title:
+    url: https://www.bigclown.com/kits/lcd-thermostat/main.png
 assembly:
   - name: BigClown LCD Module
   - name: BigClown Core Module
