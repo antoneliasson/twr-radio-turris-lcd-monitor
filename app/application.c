@@ -355,7 +355,8 @@ void application_init(void)
 
     // automatically measure the temperature every 15 minutes
     bc_tmp112_set_update_interval(&temp, 5 * 60 * 1000);
-    
+
+
 
     // initialize LCD and load from eeprom
     bc_eeprom_read(0, qr_code, sizeof(qr_code));
