@@ -1,14 +1,14 @@
-article: https://www.hackster.io/jakub-smejkal/turris-lcd-monitor-with-bigclown-1feff8
+article: https://www.hackster.io/jakub-smejkal/turris-mox-lcd-monitor-with-hardwario-iot-kit-1feff8
 video: https://www.youtube.com/watch?v=5fihG2xp4y8
 articles:
-  - title: Turris MOX LCD Monitor with BigClown
-    url: https://www.hackster.io/jakub-smejkal/turris-mox-lcd-monitor-with-bigclown-1feff8
-    description: Make your own smart LCD monitor for Turris router with BigClown and get all the information about your device in a second.
+  - title: Turris MOX LCD Monitor with HARDWARIO IoT Kit
+    url: https://www.hackster.io/jakub-smejkal/turris-mox-lcd-monitor-with-hardwario-iot-kit-1feff8
+    description: Make your own smart LCD monitor for Turris router with HARDWARIO IoT Kit and get all the information about your device in a second.
     images:
-      - url: https://hackster.imgix.net/uploads/attachments/983528/uploads2ftmp2f150cd03a-9022-472c-9e15-7b34230a76662fimg_1748_jIyURvkD3U.JPG?auto=compress%2Cformat&w=900&h=675&fit=min
+      - url: https://hackster.imgix.net/uploads/attachments/1050328/_7I88DdXpRf.blob?auto=compress%2Cformat&w=900&h=675&fit=min
 images:
   - title:
-    url: https://www.bigclown.com/kits/lcd-thermostat/main.png
+    url: https://cdn.myshoptet.com/usr/shop.hardwario.com/user/shop/category_portrait/174-1_project-thermostat-lcd-a-4.jpg?5de56e1c
 assembly:
   - name: BigClown LCD Module
   - name: BigClown Core Module
