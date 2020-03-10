@@ -8,8 +8,8 @@ articles:
       - url: https://hackster.imgix.net/uploads/attachments/1050328/_7I88DdXpRf.blob?auto=compress%2Cformat&w=900&h=675&fit=min
 images:
   - title:
-    url: https://github.com/SmejkalJakub/bc-products-images/blob/master/bc-lcd-thermostat-kit/174_project-thermostat-lcd-a-4.png?raw=true
+    url: https://github.com/hardwario/website/blob/master/static/kits-images/lcd-thermostat/main.png
 assembly:
-  - name: BigClown LCD Module
-  - name: BigClown Core Module
-  - name: BigClown Mini Battery Module
+  - name: HARDWARIO LCD Module
+  - name: HARDWARIO Core Module
+  - name: HARDWARIO Mini Battery Module
