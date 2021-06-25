@@ -6,14 +6,14 @@
 
 
 // LED instance
-bc_led_t led;
+twr_led_t led;
 
 // GFX instance
-bc_gfx_t *gfx;
+twr_gfx_t *gfx;
 
 // LCD buttons instance
-bc_button_t button_left;
-bc_button_t button_right;
+twr_button_t button_left;
+twr_button_t button_right;
 
 int numberOfPages = 4;
 
@@ -32,18 +32,18 @@ char ipAddress[40];
 char subnet[40];
 char devicesConnected[5];
 
-static const bc_radio_sub_t subs[] = {
-    {"qr/-/chng/code", BC_RADIO_SUB_PT_STRING, bc_change_qr_value, NULL},
-    {"update/-/system/info", BC_RADIO_SUB_PT_STRING, bc_get_system_info, NULL},
-    {"update/-/network/info", BC_RADIO_SUB_PT_STRING, bc_get_network_info, NULL}
+static const twr_radio_sub_t subs[] = {
+    {"qr/-/chng/code", TWR_RADIO_SUB_PT_STRING, twr_change_qr_value, NULL},
+    {"update/-/system/info", TWR_RADIO_SUB_PT_STRING, twr_get_system_info, NULL},
+    {"update/-/network/info", TWR_RADIO_SUB_PT_STRING, twr_get_network_info, NULL}
 
 };
 
 int display_page_index = 0;
 
-bc_tmp112_t temp;
+twr_tmp112_t temp;
 
-void battery_event_handler(bc_module_battery_event_t event, void *event_param)
+void battery_event_handler(twr_module_battery_event_t event, void *event_param)
 {
     (void) event;
     (void) event_param;
@@ -51,32 +51,32 @@ void battery_event_handler(bc_module_battery_event_t event, void *event_param)
     float voltage;
     int percentage;
 
-    if (bc_module_battery_get_voltage(&voltage))
+    if (twr_module_battery_get_voltage(&voltage))
     {
-        bc_radio_pub_battery(&voltage);
+        twr_radio_pub_battery(&voltage);
     }
 
 
-    if (bc_module_battery_get_charge_level(&percentage))
+    if (twr_module_battery_get_charge_level(&percentage))
     {
-        bc_radio_pub_string("%d", percentage);
+        twr_radio_pub_string("%d", percentage);
     }
 }
 
-void tmp112_event_handler(bc_tmp112_t *self, bc_tmp112_event_t event, void *event_param)
+void tmp112_event_handler(twr_tmp112_t *self, twr_tmp112_event_t event, void *event_param)
 {
     (void) self;
     (void) event_param;
 
-    if (event == BC_TMP112_EVENT_UPDATE)
+    if (event == TWR_TMP112_EVENT_UPDATE)
     {
         float temperature = 0.0;
-        bc_tmp112_get_temperature_celsius(&temp, &temperature);
-        bc_radio_pub_temperature(BC_RADIO_PUB_CHANNEL_R1_I2C0_ADDRESS_ALTERNATE, &temperature);
+        twr_tmp112_get_temperature_celsius(&temp, &temperature);
+        twr_radio_pub_temperature(TWR_RADIO_PUB_CHANNEL_R1_I2C0_ADDRESS_ALTERNATE, &temperature);
     }
 }
 
-void bc_get_system_info(uint64_t *id, const char *topic, void *value, void *param)
+void twr_get_system_info(uint64_t *id, const char *topic, void *value, void *param)
 {
     char *token[4];
     const char s[2] = ";";
@@ -92,12 +92,12 @@ void bc_get_system_info(uint64_t *id, const char *topic, void *value, void *para
     strncpy(memory, token[2], sizeof(memory));
     strncpy(type, token[3], sizeof(type));
 
-    bc_scheduler_plan_now(0);
+    twr_scheduler_plan_now(0);
 
-    
+
 }
 
-void bc_get_network_info(uint64_t *id, const char *topic, void *value, void *param)
+void twr_get_network_info(uint64_t *id, const char *topic, void *value, void *param)
 {
     char *token[3];
     const char s[2] = ";";
@@ -111,12 +111,12 @@ void bc_get_network_info(uint64_t *id, const char *topic, void *value, void *par
     strncpy(subnet, token[1], sizeof(subnet));
     strncpy(devicesConnected, token[2], sizeof(devicesConnected));
 
-    bc_scheduler_plan_now(0);
+    twr_scheduler_plan_now(0);
 
-    
+
 }
 
-void bc_change_qr_value(uint64_t *id, const char *topic, void *value, void *param)
+void twr_change_qr_value(uint64_t *id, const char *topic, void *value, void *param)
 {
     char *token[3];
     const char s[2] = ";";
@@ -145,24 +145,24 @@ void bc_change_qr_value(uint64_t *id, const char *topic, void *value, void *para
     strncat(qr_code, ";P:", sizeof(qr_code));
     strncat(qr_code, password, sizeof(qr_code));
     strncat(qr_code, ";;", sizeof(qr_code));
-    bc_log_debug("%s", qr_code);
+    twr_log_debug("%s", qr_code);
 
-    bc_eeprom_write(0, qr_code, sizeof(qr_code));
+    twr_eeprom_write(0, qr_code, sizeof(qr_code));
     get_qr_data();
 
     qrcode_project(qr_code);
 
-    bc_scheduler_plan_now(500);
+    twr_scheduler_plan_now(500);
 
 }
 
-static void print_qr(const uint8_t qrcode[]) 
+static void print_qr(const uint8_t qrcode[])
 {
     get_qr_data();
-    bc_gfx_clear(gfx);
+    twr_gfx_clear(gfx);
 
-    bc_gfx_draw_string(gfx, 2, 0, "Scan for Wi-Fi connection: ", true);
-    bc_gfx_draw_string(gfx, 2, 10, ssid, true);
+    twr_gfx_draw_string(gfx, 2, 0, "Scan for Wi-Fi connection: ", true);
+    twr_gfx_draw_string(gfx, 2, 10, ssid, true);
 
     uint32_t offset_x = 8;
     uint32_t offset_y = 32;
@@ -177,21 +177,21 @@ static void print_qr(const uint8_t qrcode[])
             uint32_t x2 = x1 + box_size;
             uint32_t y2 = y1 + box_size;
 
-            bc_gfx_draw_fill_rectangle(gfx, x1, y1, x2, y2, qrcodegen_getModule(qrcode, x, y));
+            twr_gfx_draw_fill_rectangle(gfx, x1, y1, x2, y2, qrcodegen_getModule(qrcode, x, y));
 		}
 		//fputs("\n", stdout);
 	}
 	//fputs("\n", stdout);
-    bc_gfx_update(gfx);
+    twr_gfx_update(gfx);
 }
 
 void get_qr_data()
 {
     for(int i = 7; qr_code[i] != ';'; i++)
     {
-        ssid[i - 7] = qr_code[i]; 
+        ssid[i - 7] = qr_code[i];
     }
-    
+
 
     int i = 0;
     int semicolons = 0;
@@ -209,7 +209,7 @@ void get_qr_data()
         }
     }
     while(!password_found);
-    
+
     i += 3;
 
 
@@ -221,9 +221,9 @@ void get_qr_data()
     }
 }
 
-void lcd_event_handler(bc_module_lcd_event_t event, void *event_param)
-{ 
-    if(event == BC_MODULE_LCD_EVENT_LEFT_CLICK) 
+void lcd_event_handler(twr_module_lcd_event_t event, void *event_param)
+{
+    if(event == TWR_MODULE_LCD_EVENT_LEFT_CLICK)
     {
         display_page_index--;
         if(display_page_index < 0)
@@ -231,7 +231,7 @@ void lcd_event_handler(bc_module_lcd_event_t event, void *event_param)
             display_page_index = numberOfPages;
         }
     }
-    else if(event == BC_MODULE_LCD_EVENT_RIGHT_CLICK) 
+    else if(event == TWR_MODULE_LCD_EVENT_RIGHT_CLICK)
     {
         display_page_index++;
         if(display_page_index > numberOfPages)
@@ -239,34 +239,34 @@ void lcd_event_handler(bc_module_lcd_event_t event, void *event_param)
             display_page_index = 0;
         }
     }
-    else if(event == BC_MODULE_LCD_EVENT_BOTH_HOLD)
+    else if(event == TWR_MODULE_LCD_EVENT_BOTH_HOLD)
     {
         switch (display_page_index)
         {
         case 0:
-            bc_radio_pub_bool("get/system/info", true);
+            twr_radio_pub_bool("get/system/info", true);
             break;
         case 1:
-            bc_radio_pub_bool("get/network/info", true);
+            twr_radio_pub_bool("get/network/info", true);
             break;
-        
+
         case 4:
-            bc_radio_pub_bool("reboot/-/device", true);
+            twr_radio_pub_bool("reboot/-/device", true);
             break;
-        default: 
-            bc_radio_pub_bool("get/qr/info", true);
+        default:
+            twr_radio_pub_bool("get/qr/info", true);
             break;
         }
     }
 
-    bc_scheduler_plan_now(0);
+    twr_scheduler_plan_now(0);
 
 
 }
 
 void qrcode_project(char *text)
 {
-    bc_system_pll_enable();
+    twr_system_pll_enable();
 
 	// Make and print the QR Code symbol
 	uint8_t qrcode[qrcodegen_BUFFER_LEN_MAX];
@@ -278,88 +278,88 @@ void qrcode_project(char *text)
 		print_qr(qrcode);
     }
 
-    bc_system_pll_disable();
+    twr_system_pll_disable();
 }
 
 void lcd_page_system()
 {
-    bc_gfx_clear(gfx);
-    bc_gfx_printf(gfx, 0, 0, true, "System info:");
-    bc_gfx_printf(gfx, 0, 5, true, "------------------");
-    bc_gfx_printf(gfx, 0, 15, true, "Hostname:");
-    bc_gfx_printf(gfx, 0, 25, true, "%s", hostname);
-    bc_gfx_printf(gfx, 0, 40, true, "Type:");
-    bc_gfx_printf(gfx, 0, 50, true, "%s", type);
-    bc_gfx_printf(gfx, 0, 65, true, "Free memory:");
-    bc_gfx_printf(gfx, 0, 75, true, "%s", memory);
-    bc_gfx_printf(gfx, 0, 90, true, "Uptime:");
-    bc_gfx_printf(gfx, 0, 100, true, "%s", uptime);
+    twr_gfx_clear(gfx);
+    twr_gfx_printf(gfx, 0, 0, true, "System info:");
+    twr_gfx_printf(gfx, 0, 5, true, "------------------");
+    twr_gfx_printf(gfx, 0, 15, true, "Hostname:");
+    twr_gfx_printf(gfx, 0, 25, true, "%s", hostname);
+    twr_gfx_printf(gfx, 0, 40, true, "Type:");
+    twr_gfx_printf(gfx, 0, 50, true, "%s", type);
+    twr_gfx_printf(gfx, 0, 65, true, "Free memory:");
+    twr_gfx_printf(gfx, 0, 75, true, "%s", memory);
+    twr_gfx_printf(gfx, 0, 90, true, "Uptime:");
+    twr_gfx_printf(gfx, 0, 100, true, "%s", uptime);
 
 
 }
 
 void lcd_page_network()
 {
-    bc_gfx_clear(gfx);
-    bc_gfx_printf(gfx, 0, 0, true, "Network info(LAN):");
-    bc_gfx_printf(gfx, 0, 5, true, "------------------");
-    bc_gfx_printf(gfx, 0, 15, true, "IP address:");
-    bc_gfx_printf(gfx, 0, 25, true, "%s", ipAddress);
-    bc_gfx_printf(gfx, 0, 40, true, "Subnet:");
-    bc_gfx_printf(gfx, 0, 50, true, "%s", subnet);
-    bc_gfx_printf(gfx, 0, 90, true, "Connected devices:");
-    bc_gfx_printf(gfx, 0, 100, true, "%s devices", devicesConnected);
+    twr_gfx_clear(gfx);
+    twr_gfx_printf(gfx, 0, 0, true, "Network info(LAN):");
+    twr_gfx_printf(gfx, 0, 5, true, "------------------");
+    twr_gfx_printf(gfx, 0, 15, true, "IP address:");
+    twr_gfx_printf(gfx, 0, 25, true, "%s", ipAddress);
+    twr_gfx_printf(gfx, 0, 40, true, "Subnet:");
+    twr_gfx_printf(gfx, 0, 50, true, "%s", subnet);
+    twr_gfx_printf(gfx, 0, 90, true, "Connected devices:");
+    twr_gfx_printf(gfx, 0, 100, true, "%s devices", devicesConnected);
 
 
 }
 
 void lcd_page_wifi_data()
 {
-    bc_gfx_clear(gfx);
-    bc_gfx_printf(gfx, 0, 0, true, "Wi-Fi information:");
-    bc_gfx_printf(gfx, 0, 5, true, "------------------");
-    bc_gfx_printf(gfx, 0, 15, true, "SSID:");
-    bc_gfx_printf(gfx, 0, 25, true, "%s", ssid);
-    bc_gfx_printf(gfx, 0, 45, true, "Password:");
-    bc_gfx_printf(gfx, 0, 55, true, "%s", password);
+    twr_gfx_clear(gfx);
+    twr_gfx_printf(gfx, 0, 0, true, "Wi-Fi information:");
+    twr_gfx_printf(gfx, 0, 5, true, "------------------");
+    twr_gfx_printf(gfx, 0, 15, true, "SSID:");
+    twr_gfx_printf(gfx, 0, 25, true, "%s", ssid);
+    twr_gfx_printf(gfx, 0, 45, true, "Password:");
+    twr_gfx_printf(gfx, 0, 55, true, "%s", password);
 
 }
 
 void lcd_reboot_page()
 {
-    bc_gfx_clear(gfx);
-    bc_gfx_printf(gfx, 15, 30, true, "Reboot?");
+    twr_gfx_clear(gfx);
+    twr_gfx_printf(gfx, 15, 30, true, "Reboot?");
 
 }
 
 void application_init(void)
 {
 
-    bc_log_init(BC_LOG_LEVEL_DUMP, BC_LOG_TIMESTAMP_ABS);
+    twr_log_init(TWR_LOG_LEVEL_DUMP, TWR_LOG_TIMESTAMP_ABS);
 
     // Initialize LED
-    bc_led_init(&led, BC_GPIO_LED, false, false);
+    twr_led_init(&led, TWR_GPIO_LED, false, false);
 
-    bc_module_lcd_init();
-    gfx = bc_module_lcd_get_gfx();
-    bc_module_lcd_set_event_handler(lcd_event_handler, NULL);
-    bc_gfx_set_font(gfx, &bc_font_ubuntu_13);
-    bc_module_lcd_set_button_hold_time(300);
+    twr_module_lcd_init();
+    gfx = twr_module_lcd_get_gfx();
+    twr_module_lcd_set_event_handler(lcd_event_handler, NULL);
+    twr_gfx_set_font(gfx, &twr_font_ubuntu_13);
+    twr_module_lcd_set_button_hold_time(300);
 
-    
+
     // initialize TMP112 sensor
-    bc_tmp112_init(&temp, BC_I2C_I2C0, BC_TAG_TEMPERATURE_I2C_ADDRESS_ALTERNATE);
+    twr_tmp112_init(&temp, TWR_I2C_I2C0, TWR_TAG_TEMPERATURE_I2C_ADDRESS_ALTERNATE);
 
     // set measurement handler (call "tmp112_event_handler()" after measurement)
-    bc_tmp112_set_event_handler(&temp, tmp112_event_handler, NULL);
+    twr_tmp112_set_event_handler(&temp, tmp112_event_handler, NULL);
 
     // automatically measure the temperature every 15 minutes
-    bc_tmp112_set_update_interval(&temp, 5 * 60 * 1000);
+    twr_tmp112_set_update_interval(&temp, 5 * 60 * 1000);
 
 
 
     // initialize LCD and load from eeprom
-    bc_eeprom_read(0, qr_code, sizeof(qr_code));
+    twr_eeprom_read(0, qr_code, sizeof(qr_code));
 
     if(strstr(qr_code, "WIFI:S:") == NULL)
     {
@@ -369,30 +369,30 @@ void application_init(void)
 
 
     // Initialze battery module
-    bc_module_battery_init();
-    bc_module_battery_set_event_handler(battery_event_handler, NULL);
-    bc_module_battery_set_update_interval(BATTERY_UPDATE_INTERVAL);
+    twr_module_battery_init();
+    twr_module_battery_set_event_handler(battery_event_handler, NULL);
+    twr_module_battery_set_update_interval(BATTERY_UPDATE_INTERVAL);
 
-    bc_radio_init(BC_RADIO_MODE_NODE_SLEEPING);
-    bc_radio_set_rx_timeout_for_sleeping_node(800);
-    bc_radio_set_subs((bc_radio_sub_t *) subs, sizeof(subs)/sizeof(bc_radio_sub_t));
+    twr_radio_init(TWR_RADIO_MODE_NODE_SLEEPING);
+    twr_radio_set_rx_timeout_for_sleeping_node(800);
+    twr_radio_set_subs((twr_radio_sub_t *) subs, sizeof(subs)/sizeof(twr_radio_sub_t));
 
-    bc_radio_pairing_request("turris-mon", VERSION);
+    twr_radio_pairing_request("turris-mon", VERSION);
 
-    bc_log_debug("jedu");
+    twr_log_debug("jedu");
 
 
 }
 
 void application_task(void)
 {
-    if(!bc_module_lcd_is_ready())
+    if(!twr_module_lcd_is_ready())
     {
-        bc_scheduler_plan_current_from_now(10);    
+        twr_scheduler_plan_current_from_now(10);
     }
     else
     {
-        bc_gfx_set_font(gfx, &bc_font_ubuntu_13);
+        twr_gfx_set_font(gfx, &twr_font_ubuntu_13);
 
         if(display_page_index == 0)
         {
@@ -412,11 +412,11 @@ void application_task(void)
         }
         else if(display_page_index == 4)
         {
-            bc_gfx_set_font(gfx, &bc_font_ubuntu_24);
+            twr_gfx_set_font(gfx, &twr_font_ubuntu_24);
             lcd_reboot_page();
         }
 
-        bc_gfx_update(gfx);
+        twr_gfx_update(gfx);
 
     }
 }
