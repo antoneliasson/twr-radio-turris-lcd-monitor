@@ -1,7 +1,5 @@
 #include <application.h>
 
-#include "qrcodegen.h"
-
 #define BATTERY_UPDATE_INTERVAL (60 * 60 * 1000)
 
 
@@ -11,17 +9,7 @@ twr_led_t led;
 // GFX instance
 twr_gfx_t *gfx;
 
-// LCD buttons instance
-// twr_button_t button_left;
-// twr_button_t button_right;
-
-int numberOfPages = 4;
-
-// QR code variables
-char qr_code[150];
-char ssid[32];
-char password[64];
-char encryption[32];
+int numberOfPages = 3;
 
 char hostname[20];
 char type[50];
@@ -33,10 +21,8 @@ char subnet[40];
 char devicesConnected[5];
 
 static const twr_radio_sub_t subs[] = {
-    {"qr/-/chng/code", TWR_RADIO_SUB_PT_STRING, twr_change_qr_value, NULL},
     {"update/-/system/info", TWR_RADIO_SUB_PT_STRING, twr_get_system_info, NULL},
     {"update/-/network/info", TWR_RADIO_SUB_PT_STRING, twr_get_network_info, NULL}
-
 };
 
 int display_page_index = 0;
@@ -124,114 +110,6 @@ void twr_get_network_info(uint64_t *id, const char *topic, void *value, void *pa
 
 }
 
-void twr_change_qr_value(uint64_t *id, const char *topic, void *value, void *param)
-{
-    (void) id;
-    (void) topic;
-    (void) param;
-    char *token[3];
-    const char s[2] = ";";
-    char psk[6] = "psk2";
-
-    token[0] = strtok(value, s);
-    token[1] = strtok(NULL, s);
-    token[2] = strtok(NULL, s);
-
-    strncpy(ssid, token[0], sizeof(ssid));
-    strncpy(encryption, token[1], sizeof(encryption));
-    strncpy(password, token[2], sizeof(password));
-
-    strcpy(qr_code, "");
-
-
-    if(strcmp(encryption, psk) == 0)
-    {
-        strncpy(encryption, "WPA2", sizeof(encryption));
-    }
-
-    strncat(qr_code, "WIFI:S:", sizeof(qr_code)-1);
-    strncat(qr_code, ssid, sizeof(qr_code)-1);
-    strncat(qr_code, ";T:", sizeof(qr_code)-1);
-    strncat(qr_code, encryption, sizeof(qr_code)-1);
-    strncat(qr_code, ";P:", sizeof(qr_code)-1);
-    strncat(qr_code, password, sizeof(qr_code)-1);
-    strncat(qr_code, ";;", sizeof(qr_code)-1);
-    twr_log_debug("%s", qr_code);
-
-    //twr_eeprom_write(0, qr_code, sizeof(qr_code));
-    get_qr_data();
-
-    qrcode_project(qr_code);
-
-    twr_scheduler_plan_now(0);
-
-}
-
-static void print_qr(const uint8_t qrcode[])
-{
-    get_qr_data();
-    twr_gfx_clear(gfx);
-
-    twr_gfx_draw_string(gfx, 2, 0, "Scan for Wi-Fi connection: ", true);
-    twr_gfx_draw_string(gfx, 2, 10, ssid, true);
-
-    uint32_t offset_x = 8;
-    uint32_t offset_y = 32;
-    uint32_t box_size = 3;
-	int size = qrcodegen_getSize(qrcode);
-	int border = 2;
-	for (int y = -border; y < size + border; y++) {
-		for (int x = -border; x < size + border; x++) {
-			//fputs((qrcodegen_getModule(qrcode, x, y) ? "##" : "  "), stdout);
-            uint32_t x1 = offset_x + x * box_size;
-            uint32_t y1 = offset_y + y * box_size;
-            uint32_t x2 = x1 + box_size;
-            uint32_t y2 = y1 + box_size;
-
-            twr_gfx_draw_fill_rectangle(gfx, x1, y1, x2, y2, qrcodegen_getModule(qrcode, x, y));
-		}
-		//fputs("\n", stdout);
-	}
-	//fputs("\n", stdout);
-    twr_gfx_update(gfx);
-}
-
-void get_qr_data()
-{
-    for(int i = 7; qr_code[i] != ';'; i++)
-    {
-        ssid[i - 7] = qr_code[i];
-    }
-
-
-    int i = 0;
-    int semicolons = 0;
-    bool password_found = false;
-    do
-    {
-        i++;
-        if(qr_code[i] == ';')
-        {
-            semicolons++;
-            if(semicolons == 2)
-            {
-                password_found = true;
-            }
-        }
-    }
-    while(!password_found);
-
-    i += 3;
-
-
-    int start_i = i;
-
-    for(; qr_code[i] != ';'; i++)
-    {
-        password[i - start_i] = qr_code[i];
-    }
-}
-
 void encoder_event_handler(twr_module_encoder_event_t event, void *event_param)
 {
     (void)event_param;
@@ -244,11 +122,11 @@ void encoder_event_handler(twr_module_encoder_event_t event, void *event_param)
             display_page_index--;
             if(display_page_index < 0)
             {
-                display_page_index = numberOfPages;
+                display_page_index = numberOfPages - 1;
             }
         } else {
             display_page_index++;
-            if(display_page_index > numberOfPages)
+            if(display_page_index == numberOfPages)
             {
                 display_page_index = 0;
             }
@@ -265,12 +143,10 @@ void encoder_event_handler(twr_module_encoder_event_t event, void *event_param)
             twr_log_debug("encoder get network info: %llu", twr_tick_get());
             twr_radio_pub_bool("get/network/info", &t);
             break;
-
-        case 4:
+        case 2:
 /*             twr_radio_pub_bool("reboot/-/device", &t); */
             break;
         default:
-            twr_radio_pub_bool("get/qr/info", &t);
             break;
         }
         break;
@@ -282,23 +158,6 @@ void encoder_event_handler(twr_module_encoder_event_t event, void *event_param)
         return;
     }
     twr_scheduler_plan_now(0);
-}
-
-void qrcode_project(char *text)
-{
-    twr_system_pll_enable();
-
-	// Make and print the QR Code symbol
-	uint8_t qrcode[qrcodegen_BUFFER_LEN_MAX];
-	uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
-	bool ok = qrcodegen_encodeText(text, tempBuffer, qrcode, qrcodegen_Ecc_LOW,	qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, true);
-
-	if (ok)
-    {
-		print_qr(qrcode);
-    }
-
-    twr_system_pll_disable();
 }
 
 void lcd_page_system()
@@ -330,18 +189,6 @@ void lcd_page_network()
     twr_gfx_printf(gfx, 0, 90, true, "Connected devices:");
     twr_gfx_printf(gfx, 0, 100, true, "%s devices", devicesConnected);
 
-
-}
-
-void lcd_page_wifi_data()
-{
-    twr_gfx_clear(gfx);
-    twr_gfx_printf(gfx, 0, 0, true, "Wi-Fi information:");
-    twr_gfx_printf(gfx, 0, 5, true, "------------------");
-    twr_gfx_printf(gfx, 0, 15, true, "SSID:");
-    twr_gfx_printf(gfx, 0, 25, true, "%s", ssid);
-    twr_gfx_printf(gfx, 0, 45, true, "Password:");
-    twr_gfx_printf(gfx, 0, 55, true, "%s", password);
 
 }
 
@@ -377,18 +224,6 @@ void application_init(void)
 
     // automatically measure the temperature every 15 minutes
     twr_tmp112_set_update_interval(&temp, 5 * 60 * 1000);
-
-
-
-    // initialize LCD and load from eeprom
-    twr_eeprom_read(0, qr_code, sizeof(qr_code));
-
-    if(strstr(qr_code, "WIFI:S:") == NULL)
-    {
-        strncpy(qr_code, "WIFI:S:test;T:test;P:test;;", sizeof(qr_code));
-    }
-
-
 
     // Initialze battery module
     twr_module_battery_init();
@@ -428,15 +263,6 @@ void application_task(void)
         }
         else if(display_page_index == 2)
         {
-            qrcode_project(qr_code);
-        }
-        else if(display_page_index == 3)
-        {
-            lcd_page_wifi_data();
-        }
-        else if(display_page_index == 4)
-        {
-            twr_gfx_set_font(gfx, &twr_font_ubuntu_24);
             lcd_reboot_page();
         }
 
