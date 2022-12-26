@@ -244,9 +244,11 @@ void application_init(void)
 
 void application_task(void)
 {
-    twr_log_debug(__func__);
+    twr_log_debug("%s enter: %llu", __func__, twr_tick_get());
+    twr_system_pll_enable();
     if(!twr_module_lcd_is_ready())
     {
+        twr_log_debug("%s not ready", __func__);
         twr_scheduler_plan_current_from_now(10);
     }
     else
@@ -269,4 +271,6 @@ void application_task(void)
         twr_gfx_update(gfx);
 
     }
+    twr_system_pll_disable();
+    twr_log_debug("%s leave: %llu", __func__, twr_tick_get());
 }
