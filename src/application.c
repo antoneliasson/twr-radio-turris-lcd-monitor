@@ -12,8 +12,8 @@ twr_led_t led;
 twr_gfx_t *gfx;
 
 // LCD buttons instance
-twr_button_t button_left;
-twr_button_t button_right;
+// twr_button_t button_left;
+// twr_button_t button_right;
 
 int numberOfPages = 4;
 
@@ -49,7 +49,7 @@ void battery_event_handler(twr_module_battery_event_t event, void *event_param)
     (void) event_param;
 
     float voltage;
-    int percentage;
+    // int percentage;
 
     if (twr_module_battery_get_voltage(&voltage))
     {
@@ -57,10 +57,10 @@ void battery_event_handler(twr_module_battery_event_t event, void *event_param)
     }
 
 
-    if (twr_module_battery_get_charge_level(&percentage))
-    {
-        twr_radio_pub_string("%d", percentage);
-    }
+    // if (twr_module_battery_get_charge_level(&percentage))
+    // {
+    //     twr_radio_pub_string("%d", percentage);
+    // }
 }
 
 void tmp112_event_handler(twr_tmp112_t *self, twr_tmp112_event_t event, void *event_param)
@@ -78,10 +78,15 @@ void tmp112_event_handler(twr_tmp112_t *self, twr_tmp112_event_t event, void *ev
 
 void twr_get_system_info(uint64_t *id, const char *topic, void *value, void *param)
 {
+    (void) id;
+    (void) topic;
+    (void) param;
     char *token[4];
     const char s[2] = ";";
 
+    twr_log_info("%s=%s", topic, (char *)value);
 
+    twr_log_debug(__func__);
     token[0] = strtok(value, s);
     token[1] = strtok(NULL, s);
     token[2] = strtok(NULL, s);
@@ -99,10 +104,13 @@ void twr_get_system_info(uint64_t *id, const char *topic, void *value, void *par
 
 void twr_get_network_info(uint64_t *id, const char *topic, void *value, void *param)
 {
+    (void) id;
+    (void) topic;
+    (void) param;
     char *token[3];
     const char s[2] = ";";
 
-
+    twr_log_debug("%s at %llu", __func__, twr_tick_get());
     token[0] = strtok(value, s);
     token[1] = strtok(NULL, s);
     token[2] = strtok(NULL, s);
@@ -118,6 +126,9 @@ void twr_get_network_info(uint64_t *id, const char *topic, void *value, void *pa
 
 void twr_change_qr_value(uint64_t *id, const char *topic, void *value, void *param)
 {
+    (void) id;
+    (void) topic;
+    (void) param;
     char *token[3];
     const char s[2] = ";";
     char psk[6] = "psk2";
@@ -138,21 +149,21 @@ void twr_change_qr_value(uint64_t *id, const char *topic, void *value, void *par
         strncpy(encryption, "WPA2", sizeof(encryption));
     }
 
-    strncat(qr_code, "WIFI:S:", sizeof(qr_code));
-    strncat(qr_code, ssid, sizeof(qr_code));
-    strncat(qr_code, ";T:", sizeof(qr_code));
-    strncat(qr_code, encryption, sizeof(qr_code));
-    strncat(qr_code, ";P:", sizeof(qr_code));
-    strncat(qr_code, password, sizeof(qr_code));
-    strncat(qr_code, ";;", sizeof(qr_code));
+    strncat(qr_code, "WIFI:S:", sizeof(qr_code)-1);
+    strncat(qr_code, ssid, sizeof(qr_code)-1);
+    strncat(qr_code, ";T:", sizeof(qr_code)-1);
+    strncat(qr_code, encryption, sizeof(qr_code)-1);
+    strncat(qr_code, ";P:", sizeof(qr_code)-1);
+    strncat(qr_code, password, sizeof(qr_code)-1);
+    strncat(qr_code, ";;", sizeof(qr_code)-1);
     twr_log_debug("%s", qr_code);
 
-    twr_eeprom_write(0, qr_code, sizeof(qr_code));
+    //twr_eeprom_write(0, qr_code, sizeof(qr_code));
     get_qr_data();
 
     qrcode_project(qr_code);
 
-    twr_scheduler_plan_now(500);
+    twr_scheduler_plan_now(0);
 
 }
 
@@ -221,47 +232,56 @@ void get_qr_data()
     }
 }
 
-void lcd_event_handler(twr_module_lcd_event_t event, void *event_param)
+void encoder_event_handler(twr_module_encoder_event_t event, void *event_param)
 {
-    if(event == TWR_MODULE_LCD_EVENT_LEFT_CLICK)
+    (void)event_param;
+    bool t = true;
+
+    switch (event)
     {
-        display_page_index--;
-        if(display_page_index < 0)
-        {
-            display_page_index = numberOfPages;
+    case TWR_MODULE_ENCODER_EVENT_ROTATION:
+        if (twr_module_encoder_get_increment() < 0) {
+            display_page_index--;
+            if(display_page_index < 0)
+            {
+                display_page_index = numberOfPages;
+            }
+        } else {
+            display_page_index++;
+            if(display_page_index > numberOfPages)
+            {
+                display_page_index = 0;
+            }
         }
-    }
-    else if(event == TWR_MODULE_LCD_EVENT_RIGHT_CLICK)
-    {
-        display_page_index++;
-        if(display_page_index > numberOfPages)
-        {
-            display_page_index = 0;
-        }
-    }
-    else if(event == TWR_MODULE_LCD_EVENT_BOTH_HOLD)
-    {
+        break;
+    case TWR_MODULE_ENCODER_EVENT_CLICK:
         switch (display_page_index)
         {
         case 0:
-            twr_radio_pub_bool("get/system/info", true);
+            twr_log_debug("encoder get system info");
+            twr_radio_pub_bool("get/system/info", &t);
             break;
         case 1:
-            twr_radio_pub_bool("get/network/info", true);
+            twr_log_debug("encoder get network info: %llu", twr_tick_get());
+            twr_radio_pub_bool("get/network/info", &t);
             break;
 
         case 4:
-            twr_radio_pub_bool("reboot/-/device", true);
+/*             twr_radio_pub_bool("reboot/-/device", &t); */
             break;
         default:
-            twr_radio_pub_bool("get/qr/info", true);
+            twr_radio_pub_bool("get/qr/info", &t);
             break;
         }
+        break;
+    case TWR_MODULE_ENCODER_EVENT_PRESS:
+    case TWR_MODULE_ENCODER_EVENT_HOLD:
+    case TWR_MODULE_ENCODER_EVENT_RELEASE:
+    case TWR_MODULE_ENCODER_EVENT_ERROR:
+    default:
+        return;
     }
-
     twr_scheduler_plan_now(0);
-
-
 }
 
 void qrcode_project(char *text)
@@ -342,9 +362,11 @@ void application_init(void)
 
     twr_module_lcd_init();
     gfx = twr_module_lcd_get_gfx();
-    twr_module_lcd_set_event_handler(lcd_event_handler, NULL);
     twr_gfx_set_font(gfx, &twr_font_ubuntu_13);
-    twr_module_lcd_set_button_hold_time(300);
+    //twr_module_lcd_set_button_hold_time(300);
+
+    twr_module_encoder_init();
+    twr_module_encoder_set_event_handler(encoder_event_handler, NULL);
 
 
     // initialize TMP112 sensor
@@ -373,8 +395,9 @@ void application_init(void)
     twr_module_battery_set_event_handler(battery_event_handler, NULL);
     twr_module_battery_set_update_interval(BATTERY_UPDATE_INTERVAL);
 
+    //twr_radio_init(TWR_RADIO_MODE_NODE_LISTENING);
     twr_radio_init(TWR_RADIO_MODE_NODE_SLEEPING);
-    twr_radio_set_rx_timeout_for_sleeping_node(800);
+    twr_radio_set_rx_timeout_for_sleeping_node(400);
     twr_radio_set_subs((twr_radio_sub_t *) subs, sizeof(subs)/sizeof(twr_radio_sub_t));
 
     twr_radio_pairing_request("turris-mon", VERSION);
@@ -386,6 +409,7 @@ void application_init(void)
 
 void application_task(void)
 {
+    twr_log_debug(__func__);
     if(!twr_module_lcd_is_ready())
     {
         twr_scheduler_plan_current_from_now(10);
