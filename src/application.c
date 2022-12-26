@@ -131,6 +131,7 @@ void encoder_event_handler(twr_module_encoder_event_t event, void *event_param)
                 display_page_index = 0;
             }
         }
+        twr_scheduler_plan_now(0);
         break;
     case TWR_MODULE_ENCODER_EVENT_CLICK:
         switch (display_page_index)
@@ -157,7 +158,6 @@ void encoder_event_handler(twr_module_encoder_event_t event, void *event_param)
     default:
         return;
     }
-    twr_scheduler_plan_now(0);
 }
 
 void lcd_page_system()
@@ -238,10 +238,10 @@ void application_init(void)
     twr_radio_pairing_request("turris-mon", VERSION);
 
     twr_log_debug("jedu");
-
-
 }
 
+/* This is task 0 which updates the LCD. It is scheduled when
+ * twr_scheduler_plan_now(0) is called */
 void application_task(void)
 {
     twr_log_debug("%s enter: %llu", __func__, twr_tick_get());
