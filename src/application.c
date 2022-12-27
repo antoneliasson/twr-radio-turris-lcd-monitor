@@ -11,7 +11,8 @@ static twr_scheduler_task_id_t display_update_task;
 // GFX instance
 static twr_gfx_t *gfx;
 
-static int numberOfPages = 3;
+static unsigned int numberOfPages = 3;
+static unsigned int display_page_index = 0;
 
 static char hostname[20];
 static char type[50];
@@ -29,8 +30,6 @@ static const twr_radio_sub_t subs[] = {
     {"update/-/system/info", TWR_RADIO_SUB_PT_STRING, twr_get_system_info, NULL},
     {"update/-/network/info", TWR_RADIO_SUB_PT_STRING, twr_get_network_info, NULL}
 };
-
-static int display_page_index = 0;
 
 static twr_tmp112_t temp;
 
@@ -122,19 +121,11 @@ static void encoder_event_handler(twr_module_encoder_event_t event, void *event_
     switch (event)
     {
     case TWR_MODULE_ENCODER_EVENT_ROTATION:
-        if (twr_module_encoder_get_increment() < 0) {
-            display_page_index--;
-            if(display_page_index < 0)
-            {
-                display_page_index = numberOfPages - 1;
-            }
-        } else {
-            display_page_index++;
-            if(display_page_index == numberOfPages)
-            {
-                display_page_index = 0;
-            }
-        }
+        if (twr_module_encoder_get_increment() < 0)
+            display_page_index = (display_page_index + numberOfPages - 1) % numberOfPages;
+        else
+            display_page_index = (display_page_index + 1) % numberOfPages;
+        twr_log_debug("%s: index=%u", __func__, display_page_index);
         twr_scheduler_plan_now(display_update_task);
         break;
     case TWR_MODULE_ENCODER_EVENT_CLICK:
@@ -145,11 +136,11 @@ static void encoder_event_handler(twr_module_encoder_event_t event, void *event_
             twr_radio_pub_bool("get/system/info", &t);
             break;
         case 1:
-            twr_log_debug("encoder get network info: %llu", twr_tick_get());
+            twr_log_debug("encoder get network info");
             twr_radio_pub_bool("get/network/info", &t);
             break;
         case 2:
-/*             twr_radio_pub_bool("reboot/-/device", &t); */
+            twr_radio_pub_bool("reboot/-/device", &t);
             break;
         default:
             break;
@@ -190,8 +181,6 @@ static void lcd_page_network()
     twr_gfx_printf(gfx, 0, 50, true, "%s", subnet);
     twr_gfx_printf(gfx, 0, 90, true, "Connected devices:");
     twr_gfx_printf(gfx, 0, 100, true, "%s devices", devicesConnected);
-
-
 }
 
 static void lcd_reboot_page()
@@ -243,10 +232,10 @@ void application_init(void)
 
 static void display_update(void *param)
 {
-    (void) param;
+    (void)param;
     twr_log_debug("%s enter", __func__);
     twr_system_pll_enable();
-    if(!twr_module_lcd_is_ready())
+    if (!twr_module_lcd_is_ready())
     {
         twr_log_debug("%s not ready", __func__);
         twr_scheduler_plan_current_from_now(10);
@@ -255,21 +244,22 @@ static void display_update(void *param)
     {
         twr_gfx_set_font(gfx, &twr_font_ubuntu_13);
 
-        if(display_page_index == 0)
+        switch (display_page_index)
         {
+        case 0:
             lcd_page_system();
-        }
-        else if(display_page_index == 1)
-        {
+            break;
+        case 1:
             lcd_page_network();
-        }
-        else if(display_page_index == 2)
-        {
+            break;
+        case 2:
             lcd_reboot_page();
+            break;
+        default:
+            break;
         }
 
         twr_gfx_update(gfx);
-
     }
     twr_system_pll_disable();
     twr_log_debug("%s leave", __func__);
