@@ -2,6 +2,7 @@
 
 #define BATTERY_UPDATE_INTERVAL (60 * 60 * 1000)
 
+twr_scheduler_task_id_t display_update_task;
 
 // LED instance
 twr_led_t led;
@@ -83,7 +84,7 @@ void twr_get_system_info(uint64_t *id, const char *topic, void *value, void *par
     strncpy(memory, token[2], sizeof(memory));
     strncpy(type, token[3], sizeof(type));
 
-    twr_scheduler_plan_now(0);
+    twr_scheduler_plan_now(display_update_task);
 
 
 }
@@ -105,7 +106,7 @@ void twr_get_network_info(uint64_t *id, const char *topic, void *value, void *pa
     strncpy(subnet, token[1], sizeof(subnet));
     strncpy(devicesConnected, token[2], sizeof(devicesConnected));
 
-    twr_scheduler_plan_now(0);
+    twr_scheduler_plan_now(display_update_task);
 
 
 }
@@ -131,7 +132,7 @@ void encoder_event_handler(twr_module_encoder_event_t event, void *event_param)
                 display_page_index = 0;
             }
         }
-        twr_scheduler_plan_now(0);
+        twr_scheduler_plan_now(display_update_task);
         break;
     case TWR_MODULE_ENCODER_EVENT_CLICK:
         switch (display_page_index)
@@ -199,6 +200,8 @@ void lcd_reboot_page()
 
 }
 
+static void display_update(void *param);
+
 void application_init(void)
 {
 
@@ -215,6 +218,7 @@ void application_init(void)
     twr_module_encoder_init();
     twr_module_encoder_set_event_handler(encoder_event_handler, NULL);
 
+    display_update_task = twr_scheduler_register(display_update, NULL, 0);
 
     // initialize TMP112 sensor
     twr_tmp112_init(&temp, TWR_I2C_I2C0, TWR_TAG_TEMPERATURE_I2C_ADDRESS_ALTERNATE);
@@ -240,10 +244,9 @@ void application_init(void)
     twr_log_debug("jedu");
 }
 
-/* This is task 0 which updates the LCD. It is scheduled when
- * twr_scheduler_plan_now(0) is called */
-void application_task(void)
+static void display_update(void *param)
 {
+    (void) param;
     twr_log_debug("%s enter: %llu", __func__, twr_tick_get());
     twr_system_pll_enable();
     if(!twr_module_lcd_is_ready())
