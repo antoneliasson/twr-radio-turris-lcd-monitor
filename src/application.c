@@ -1,36 +1,40 @@
-#include <application.h>
+#ifndef VERSION
+#define VERSION "vdev"
+#endif
+
+#include <bcl.h>
 
 #define BATTERY_UPDATE_INTERVAL (60 * 60 * 1000)
 
-twr_scheduler_task_id_t display_update_task;
-
-// LED instance
-twr_led_t led;
+static twr_scheduler_task_id_t display_update_task;
 
 // GFX instance
-twr_gfx_t *gfx;
+static twr_gfx_t *gfx;
 
-int numberOfPages = 3;
+static int numberOfPages = 3;
 
-char hostname[20];
-char type[50];
-char memory[50];
-char uptime[30];
+static char hostname[20];
+static char type[50];
+static char memory[50];
+static char uptime[30];
 
-char ipAddress[40];
-char subnet[40];
-char devicesConnected[5];
+static char ipAddress[40];
+static char subnet[40];
+static char devicesConnected[5];
+
+static void twr_get_system_info(uint64_t *id, const char *topic, void *value, void *param);
+static void twr_get_network_info(uint64_t *id, const char *topic, void *value, void *param);
 
 static const twr_radio_sub_t subs[] = {
     {"update/-/system/info", TWR_RADIO_SUB_PT_STRING, twr_get_system_info, NULL},
     {"update/-/network/info", TWR_RADIO_SUB_PT_STRING, twr_get_network_info, NULL}
 };
 
-int display_page_index = 0;
+static int display_page_index = 0;
 
-twr_tmp112_t temp;
+static twr_tmp112_t temp;
 
-void battery_event_handler(twr_module_battery_event_t event, void *event_param)
+static void battery_event_handler(twr_module_battery_event_t event, void *event_param)
 {
     (void) event;
     (void) event_param;
@@ -50,7 +54,7 @@ void battery_event_handler(twr_module_battery_event_t event, void *event_param)
     // }
 }
 
-void tmp112_event_handler(twr_tmp112_t *self, twr_tmp112_event_t event, void *event_param)
+static void tmp112_event_handler(twr_tmp112_t *self, twr_tmp112_event_t event, void *event_param)
 {
     (void) self;
     (void) event_param;
@@ -63,7 +67,7 @@ void tmp112_event_handler(twr_tmp112_t *self, twr_tmp112_event_t event, void *ev
     }
 }
 
-void twr_get_system_info(uint64_t *id, const char *topic, void *value, void *param)
+static void twr_get_system_info(uint64_t *id, const char *topic, void *value, void *param)
 {
     (void) id;
     (void) topic;
@@ -71,9 +75,8 @@ void twr_get_system_info(uint64_t *id, const char *topic, void *value, void *par
     char *token[4];
     const char s[2] = ";";
 
-    twr_log_info("%s=%s", topic, (char *)value);
+    twr_log_info("%s: %s=%s", __func__, topic, (char *)value);
 
-    twr_log_debug(__func__);
     token[0] = strtok(value, s);
     token[1] = strtok(NULL, s);
     token[2] = strtok(NULL, s);
@@ -89,7 +92,7 @@ void twr_get_system_info(uint64_t *id, const char *topic, void *value, void *par
 
 }
 
-void twr_get_network_info(uint64_t *id, const char *topic, void *value, void *param)
+static void twr_get_network_info(uint64_t *id, const char *topic, void *value, void *param)
 {
     (void) id;
     (void) topic;
@@ -111,7 +114,7 @@ void twr_get_network_info(uint64_t *id, const char *topic, void *value, void *pa
 
 }
 
-void encoder_event_handler(twr_module_encoder_event_t event, void *event_param)
+static void encoder_event_handler(twr_module_encoder_event_t event, void *event_param)
 {
     (void)event_param;
     bool t = true;
@@ -161,7 +164,7 @@ void encoder_event_handler(twr_module_encoder_event_t event, void *event_param)
     }
 }
 
-void lcd_page_system()
+static void lcd_page_system()
 {
     twr_gfx_clear(gfx);
     twr_gfx_printf(gfx, 0, 0, true, "System info:");
@@ -174,11 +177,9 @@ void lcd_page_system()
     twr_gfx_printf(gfx, 0, 75, true, "%s", memory);
     twr_gfx_printf(gfx, 0, 90, true, "Uptime:");
     twr_gfx_printf(gfx, 0, 100, true, "%s", uptime);
-
-
 }
 
-void lcd_page_network()
+static void lcd_page_network()
 {
     twr_gfx_clear(gfx);
     twr_gfx_printf(gfx, 0, 0, true, "Network info(LAN):");
@@ -193,11 +194,10 @@ void lcd_page_network()
 
 }
 
-void lcd_reboot_page()
+static void lcd_reboot_page()
 {
     twr_gfx_clear(gfx);
     twr_gfx_printf(gfx, 15, 30, true, "Reboot?");
-
 }
 
 static void display_update(void *param);
@@ -206,9 +206,6 @@ void application_init(void)
 {
 
     twr_log_init(TWR_LOG_LEVEL_DUMP, TWR_LOG_TIMESTAMP_ABS);
-
-    // Initialize LED
-    twr_led_init(&led, TWR_GPIO_LED, false, false);
 
     twr_module_lcd_init();
     gfx = twr_module_lcd_get_gfx();
@@ -247,7 +244,7 @@ void application_init(void)
 static void display_update(void *param)
 {
     (void) param;
-    twr_log_debug("%s enter: %llu", __func__, twr_tick_get());
+    twr_log_debug("%s enter", __func__);
     twr_system_pll_enable();
     if(!twr_module_lcd_is_ready())
     {
@@ -275,5 +272,5 @@ static void display_update(void *param)
 
     }
     twr_system_pll_disable();
-    twr_log_debug("%s leave: %llu", __func__, twr_tick_get());
+    twr_log_debug("%s leave", __func__);
 }
