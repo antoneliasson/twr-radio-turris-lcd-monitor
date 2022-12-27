@@ -11,8 +11,12 @@ static twr_scheduler_task_id_t display_update_task;
 // GFX instance
 static twr_gfx_t *gfx;
 
-static unsigned int numberOfPages = 3;
-static unsigned int display_page_index = 0;
+static enum {
+    SYSTEM_INFO_PAGE,
+    NETWORK_INFO_PAGE,
+    REBOOT_PAGE,
+    NUM_PAGES
+} display_page_index;
 
 static char hostname[20];
 static char type[50];
@@ -122,26 +126,27 @@ static void encoder_event_handler(twr_module_encoder_event_t event, void *event_
     {
     case TWR_MODULE_ENCODER_EVENT_ROTATION:
         if (twr_module_encoder_get_increment() < 0)
-            display_page_index = (display_page_index + numberOfPages - 1) % numberOfPages;
+            display_page_index = (display_page_index + NUM_PAGES - 1) % NUM_PAGES;
         else
-            display_page_index = (display_page_index + 1) % numberOfPages;
-        twr_log_debug("%s: index=%u", __func__, display_page_index);
+            display_page_index = (display_page_index + 1) % NUM_PAGES;
         twr_scheduler_plan_now(display_update_task);
         break;
     case TWR_MODULE_ENCODER_EVENT_CLICK:
         switch (display_page_index)
         {
-        case 0:
-            twr_log_debug("encoder get system info");
+        case SYSTEM_INFO_PAGE:
+            twr_log_debug("send get/system/info");
             twr_radio_pub_bool("get/system/info", &t);
             break;
-        case 1:
-            twr_log_debug("encoder get network info");
+        case NETWORK_INFO_PAGE:
+            twr_log_debug("send get/network/info");
             twr_radio_pub_bool("get/network/info", &t);
             break;
-        case 2:
+        case REBOOT_PAGE:
+            twr_log_debug("send reboot/-/device");
             twr_radio_pub_bool("reboot/-/device", &t);
             break;
+        case NUM_PAGES:
         default:
             break;
         }
@@ -246,15 +251,16 @@ static void display_update(void *param)
 
         switch (display_page_index)
         {
-        case 0:
+        case SYSTEM_INFO_PAGE:
             lcd_page_system();
             break;
-        case 1:
+        case NETWORK_INFO_PAGE:
             lcd_page_network();
             break;
-        case 2:
+        case REBOOT_PAGE:
             lcd_reboot_page();
             break;
+        case NUM_PAGES:
         default:
             break;
         }
